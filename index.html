@@ -159,6 +159,34 @@ main{padding-top:16px}
 .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
 .fade{animation:fade .28s ease}
 @keyframes fade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+.plugin-card{
+  margin-top:16px;padding:16px;border-radius:22px;
+  border:1px solid rgba(255,255,255,.9);background:var(--card);
+  -webkit-backdrop-filter:blur(20px) saturate(180%);
+  backdrop-filter:blur(20px) saturate(180%);
+  box-shadow:var(--shadow);
+}
+.pc-top{display:flex;align-items:center;gap:12px}
+.pc-title{font-size:18px;font-weight:700;letter-spacing:-.01em}
+.pc-ver{
+  display:inline-block;font-size:11px;font-weight:600;color:var(--blue);
+  background:rgba(0,113,227,.10);border-radius:999px;padding:2px 8px;
+  margin-left:4px;vertical-align:2px;
+}
+.pc-desc{font-size:12px;color:var(--sub);margin-top:4px;line-height:1.4}
+.pc-dl{
+  margin-left:auto;flex:none;background:var(--blue);color:#fff;
+  font-size:14px;font-weight:600;padding:9px 16px;border-radius:999px;
+  text-decoration:none;white-space:nowrap;
+}
+.pc-dl:active{opacity:.8}
+.pc-fw{
+  display:grid;grid-template-columns:repeat(2,1fr);gap:7px 16px;
+  margin-top:12px;padding-top:12px;border-top:1px solid var(--line);
+  font-size:12px;color:var(--text);
+}
+.pc-fw span::before{content:"✓";color:var(--blue);font-weight:700;margin-right:6px}
+@media(max-width:520px){.pc-fw{grid-template-columns:1fr}}
 </style>
 </head>
 <body>
@@ -175,6 +203,26 @@ main{padding-top:16px}
     </div>
   </div>
 </header>
+
+<section class="wrap" id="pluginBox">
+  <div class="plugin-card">
+    <div class="pc-top">
+      <div>
+        <div class="pc-title">语音盒 <span class="pc-ver" id="pcVer">v1.9.4</span></div>
+        <div class="pc-desc">QFun 插件 · 云端语音包 / 网易云音乐 / 会员登录 / 自动更新</div>
+      </div>
+      <a class="pc-dl" id="pcDl" href="plugin/voicebox.zip" download>下载插件</a>
+    </div>
+    <div class="pc-fw">
+      <span>云端语音包 <b id="pcPacks">192</b> 类 · <b id="pcFiles">9,911</b> 条</span>
+      <span>聊天小悬浮窗一键发送</span>
+      <span>网易云在线搜索试听</span>
+      <span>QQ音乐 / 网易云会员登录</span>
+      <span>音乐缓存一键清理</span>
+      <span>打开插件自动检查更新</span>
+    </div>
+  </div>
+</section>
 
 <main class="wrap" id="list"></main>
 
@@ -243,6 +291,17 @@ async function init(){
   }
   const total = DATA.packs.reduce((n,p) => n + p.files.length, 0);
   $('#sub').textContent = total.toLocaleString() + ' 条语音 · ' + DATA.packs.length + ' 类';
+  $('#pcPacks').textContent = DATA.packs.length;
+  $('#pcFiles').textContent = total.toLocaleString();
+  fetch('plugin/latest.json?t=' + Date.now(), { cache: 'no-store' })
+    .then(r => r.json())
+    .then(j => {
+      if (j && j.version){
+        $('#pcVer').textContent = 'v' + j.version;
+        if (j.zip) $('#pcDl').href = j.zip;
+      }
+    })
+    .catch(() => {});
   window.addEventListener('hashchange', route);
   $('#q').addEventListener('input', e => {
     query = e.target.value.trim().toLowerCase();
@@ -265,9 +324,11 @@ function route(){
     $('#title').textContent = pack.name;
     $('#sub').textContent = pack.files.length + ' 条语音';
     $('#back').classList.add('show');
+    $('#pluginBox').style.display = 'none';
     renderPack();
   } else {
     pack = null; cur = -1;
+    $('#pluginBox').style.display = '';
     $('#title').textContent = '语音包';
     const total = DATA.packs.reduce((n,p) => n + p.files.length, 0);
     $('#sub').textContent = total.toLocaleString() + ' 条语音 · ' + DATA.packs.length + ' 类';
