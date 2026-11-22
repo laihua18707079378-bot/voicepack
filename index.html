@@ -228,12 +228,13 @@ main{padding-top:16px}
   <div class="plugin-card">
     <div class="pc-top">
       <div>
-        <div class="pc-title">音乐盒 <span class="pc-ver" id="mbVer">v1.9.6</span></div>
-        <div class="pc-desc">内置于语音盒插件 · 网易云 / QQ音乐 / 酷狗 · 登录后直接播放</div>
+        <div class="pc-title">音乐盒 <span class="pc-ver" id="mbVer">v1.0.0</span></div>
+        <div class="pc-desc">独立插件 · 网易云 / QQ音乐 / 酷狗 · 登录后直接播放</div>
       </div>
-      <a class="pc-dl" id="mbDl" href="plugin/voicebox.zip" download>下载音乐盒</a>
+      <a class="pc-dl" id="mbDl" href="plugin/musicbox.zip" download>下载音乐盒</a>
     </div>
     <div class="pc-fw">
+      <span>独立音乐盒插件，可与语音盒共存</span>
       <span>网易云 / QQ音乐 / 酷狗 自由切换</span>
       <span>会员账号登录，解锁更高音质</span>
       <span>搜索结果点一下就下载播放</span>
@@ -317,6 +318,13 @@ async function init(){
       if (j && j.version){
         $('#pcVer').textContent = 'v' + j.version;
         if (j.zip) $('#pcDl').href = j.zip;
+      }
+    })
+    .catch(() => {});
+  fetch('plugin/musicbox_latest.json?t=' + Date.now(), { cache: 'no-store' })
+    .then(r => r.json())
+    .then(j => {
+      if (j && j.version){
         if ($('#mbVer')) $('#mbVer').textContent = 'v' + j.version;
         if ($('#mbDl') && j.zip) $('#mbDl').href = j.zip;
       }

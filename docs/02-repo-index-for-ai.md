@@ -50,10 +50,14 @@
 | `version.json` | 数字版本：`packs/files/songs/updated`，客户端缓存比对用 |
 | `audio/<包名>/*.mp3` | 云端语音包文件，约 9911 个 |
 | `music/*.mp3` + `music/music.json` | 早期 CC 曲库，音乐盒已改用网易云，保留未用 |
-| `plugin/voicebox.zip` | 当前插件安装包（1.9.6，需 `git add -f`） |
-| `plugin/latest.json` | `{"version":"1.9.6","zip":"..."}` 自更新入口 |
+| `plugin/voicebox.zip` | 语音盒插件安装包（1.9.6，需 `git add -f`） |
+| `plugin/latest.json` | 语音盒 `{"version":"1.9.6","zip":"..."}` 自更新入口 |
+| `plugin/musicbox.zip` | 独立音乐盒插件安装包（1.0.0，需 `git add -f`） |
+| `plugin/musicbox_latest.json` | 音乐盒 `{"version":"1.0.0","zip":"..."}` 自更新入口 |
 | `source/voicebox/main.java` | 插件主脚本（BeanShell，全部功能） |
 | `source/voicebox/info.prop` | 插件元信息：id/名称/versionCode/author/type |
+| `source/musicbox/main.java` | 独立音乐盒插件脚本（仅音乐盒菜单） |
+| `source/musicbox/info.prop` | 独立音乐盒元信息（id=musicbox，versionCode=1.0.0） |
 | `source/apk-patch/LocalPluginInjector.smali` | 商店注入 voicebox 条目 + 动态版本读取 |
 | `source/apk-patch/BuiltinPluginInstaller.smali` | 首次安装时解压 APK 内置插件、自动启用 |
 | `docs/00-project-overview.md` | 项目总览：功能/接口/构建/版本轨迹 |

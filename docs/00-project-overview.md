@@ -24,9 +24,12 @@ data.json            语音包清单（站点运行时数据）
 version.json         {"packs":192,"files":9911,"songs":17,"updated":"2026-11-20"}
 audio/<包名>/*.mp3    云端语音包文件（约 9911 个）
 music/*.mp3          早期 CC 曲库（音乐盒已改为在线网易云，保留未用）
-plugin/voicebox.zip  当前插件安装包（1.9.6）
-plugin/latest.json   插件最新版本 { "version": "1.9.6", "zip": "..." }
-source/voicebox/     插件源码（main.java / info.prop）
+plugin/voicebox.zip  语音盒插件安装包（1.9.6）
+plugin/latest.json   语音盒最新版本 { "version": "1.9.6", "zip": "..." }
+plugin/musicbox.zip  独立音乐盒插件安装包（1.0.0）
+plugin/musicbox_latest.json  音乐盒最新版本 { "version": "1.0.0", "zip": "..." }
+source/voicebox/     语音盒插件源码（main.java / info.prop）
+source/musicbox/     独立音乐盒插件源码
 source/apk-patch/    APK 侧关键 smali（商店注入、内置插件安装）
 docs/                项目文档（本目录，含 03-musicbox.md 音乐盒专题）
 ```

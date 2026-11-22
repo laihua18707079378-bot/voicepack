@@ -1,8 +1,9 @@
 # 音乐盒模块（三平台搜索 / 登录 / 播放）
 
-> 对应插件版本：**1.9.6**
+> 对应插件版本：**1.9.6**（语音盒内置）／**1.0.0**（独立音乐盒插件）
 > 代码位置：[source/voicebox/main.java](../source/voicebox/main.java)
-> 网页下载：<https://mcer.dpdns.org/plugin/voicebox.zip>（音乐盒内置于语音盒插件）
+> 网页下载：<https://mcer.dpdns.org/plugin/musicbox.zip>（独立音乐盒插件）
+> 语音盒内置版下载：<https://mcer.dpdns.org/plugin/voicebox.zip>
 
 ## 1. 功能范围
 
