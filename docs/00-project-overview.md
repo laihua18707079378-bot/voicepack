@@ -1,6 +1,6 @@
 # 语音盒（voicebox）项目总览
 
-> 更新时间：2026-11-21　当前插件版本：**1.9.4**
+> 更新时间：2026-11-22　当前插件版本：**1.9.6**
 > 本文档面向接手开发的人或 AI，说明项目构成、功能、接口与发布流程。
 
 ## 1. 项目是什么
@@ -24,11 +24,11 @@ data.json            语音包清单（站点运行时数据）
 version.json         {"packs":192,"files":9911,"songs":17,"updated":"2026-11-20"}
 audio/<包名>/*.mp3    云端语音包文件（约 9911 个）
 music/*.mp3          早期 CC 曲库（音乐盒已改为在线网易云，保留未用）
-plugin/voicebox.zip  当前插件安装包（1.9.4）
-plugin/latest.json   插件最新版本 { "version": "1.9.4", "zip": "..." }
+plugin/voicebox.zip  当前插件安装包（1.9.6）
+plugin/latest.json   插件最新版本 { "version": "1.9.6", "zip": "..." }
 source/voicebox/     插件源码（main.java / info.prop）
 source/apk-patch/    APK 侧关键 smali（商店注入、内置插件安装）
-docs/                项目文档（本目录）
+docs/                项目文档（本目录，含 03-musicbox.md 音乐盒专题）
 ```
 
 ## 3. 插件功能
@@ -48,23 +48,25 @@ docs/                项目文档（本目录）
 - 扫描/导入手机音频，支持多选批量发送
 - 播放使用本地预览播放器，发送走宿主 `sendPtt`
 
-### 音乐盒（网易云在线）
-- 搜索框（`EditText`）请求 `music.163.com/api/search/get/web`，最多 30 首
-- 已登录时请求带 Cookie，播放走账号接口（高音质）；未登录回退 `song/media/outer/url`
-- 点歌 → 下载到 `plugin/musicbox/*.mp3` → 本地 MediaPlayer 播放（纯流式播放会无声，必须落盘）
+### 音乐盒（三平台在线）
+- 平台切换：网易云音乐 / QQ音乐 / 酷狗音乐（`gPlatform` = `163` / `qq` / `kg`）
+- 搜索：网易云 `api/search/get/web`、QQ `search_for_qq_cp`、酷狗 `song_search_v2`，最多 30 首
+- 已登录时请求带对应平台 Cookie；QQ/酷狗未登录通常拿不到播放地址
+- 点歌 → 解析播放地址 → 下载到 `plugin/musicbox/<平台>_<id>.mp3` → 本地 MediaPlayer 播放
 - 同一首歌点击是暂停/继续；不同歌曲按 **歌曲 id** 判断并强制切歌
 - 搜索刷新列表后按正在播放歌曲 id 重新定位高亮与播放条
 - 「音乐缓存 X MB · 点此一键清除」删除全部已下载 mp3（1.9.4 新增）
 
-### 会员登录管理（QQ音乐 / 网易云）
+### 会员登录管理（QQ音乐 / 网易云 / 酷狗）
 - 菜单「会员登录管理」与首页「会员账号」进入同一界面
-- 两个平台卡片：QQ音乐、网易云音乐；状态徽章 FREE / 已登录
+- 三个平台卡片：QQ音乐、网易云音乐、酷狗音乐；状态徽章 FREE / 已登录
 - 一键登录打开全屏 WebView 官方登录页，登录完成自动抓取 Cookie 保存
 - 保留「我已登录」手动保存按钮
 - Cookie 存储：优先宿主 `putString/getString`，配置名 `music_login`，键 `平台_QQ号`；
   失败时回退 `plugin/login_<平台>_<uin>.txt`
 - 打开界面**不做联网校验、不自动清除**，只有用户点「退出登录」才删除
-- 仅接受真实登录 Cookie：网易云必须含 `MUSIC_U=`，QQ 音乐必须含 `qqmusic_key=` 或 `qm_keyst=`
+- 仅接受真实登录 Cookie：网易云含 `MUSIC_U=`，QQ 音乐含 `qqmusic_key=`/`qm_keyst=`，
+  酷狗含 `userid=` 或 `KuGoo=`
 
 ## 4. 关键接口
 
@@ -74,6 +76,18 @@ docs/                项目文档（本目录）
 - 账号播放：`GET https://music.163.com/api/song/enhance/player/url/v1?ids=[id]&level=exhigh&encodeType=mp3&csrf_token=<...>`
 - 兜底播放：`GET https://music.163.com/song/media/outer/url?id=<id>.mp3`
 - 账号校验（已取消自动调用）：`GET https://music.163.com/api/nuser/account/get`
+
+QQ音乐（请求头：桌面 UA、`Referer: https://y.qq.com/`、用户 Cookie）：
+
+- 搜索：`GET https://c.y.qq.com/soso/fcgi-bin/search_for_qq_cp?w=<kw>&format=json&n=30&p=1`
+- 播放：`GET https://u.y.qq.com/cgi-bin/musicu.fcg`（vkey / purl，需登录 Cookie）
+
+酷狗（请求头：`Referer: https://www.kugou.com/`、用户 Cookie）：
+
+- 搜索：`GET https://songsearch.kugou.com/song_search_v2?keyword=<kw>&page=1&pagesize=30&platform=WebFilter`
+- 播放：`GET https://wwwapi.kugou.com/yy/index.php?r=play/getdata&hash=<hash>`（需补 `kg_mid`/`kg_dfid`）
+- 兜底：`GET https://m.kugou.com/app/i/getSongInfo.php?cmd=playInfo&hash=<hash>`
+- 未登录直接搜/播会返回 `err_code 30020`
 
 站点：
 
@@ -140,13 +154,25 @@ curl -s "https://mcer.dpdns.org/plugin/latest.json?x=$RANDOM"
 | 1.9.2 | 补 `import android.widget.EditText`，修复音乐搜索框不显示 |
 | 1.9.3 | 切歌按歌曲 id 判断，修复新歌不顶掉旧歌 |
 | 1.9.4 | 音乐盒新增一键清除音乐缓存 |
+| 1.9.5 | 音乐盒支持网易云 / QQ音乐切换搜索 |
+| 1.9.6 | 新增酷狗音乐：Cookie 登录、搜索、播放 |
 
 ## 8. 已知问题 / 注意事项
 
-- 音乐盒搜索目前只接网易云；QQ 音乐仅用于登录，未接搜索
+- 三个平台都是非公开接口，随时可能变更；QQ音乐/酷狗的播放地址依赖登录 Cookie
 - 网易云部分 VIP/版权歌曲即使登录也可能拿不到地址（接口返回空），会提示「暂无版权或需要会员」
 - 登录 Cookie 按 QQ 号分别保存；换账号登录后需要重新登录
 - 插件商店条目版本依赖 APK 内的 `readVersion()`；旧 APK 不会动态同步
 - 站点为静态托管 + 未知路径回退 index.html，部署有 1-3 分钟延迟
 - `data.json` 与 `*.zip` 被 `.gitignore` 忽略（推送插件包需 `git add -f`）
 - APK 使用 debug 证书签名；内置包只在插件缺失时解压
+
+## 9. 独立语音盒 App（com.nl.voicebox）
+
+除 QFun 插件外，另有一个同源的原生 App，功能是「从站点下载语音 mp3 + 悬浮窗选择播放」：
+
+- 安装包：`语音盒_v1.3.apk`（早期产物，未入库）
+- 语音库：读取站点首页内嵌数据，缓存 `index_cache.html`，二次打开秒开
+- 播放：点任意语音 → 下载 mp3 → 本地播放；不是自动连播
+- 悬浮窗：前台服务 + 可拖动面板，内含「语音包 → 语音」两级列表，可最小化成一个可拖动小球
+- 与插件相互独立：不共享登录、不共享缓存

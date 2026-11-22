@@ -136,8 +136,9 @@ java.util.Set gMusicSel = new java.util.HashSet();
 int gBatchIndex = 0;
 int gBatchTotal = 0;
 
-// ===== 音乐盒（网易云音乐） =====
+// ===== 音乐盒（网易云 / QQ音乐） =====
 String gNeQuery = "";
+String gPlatform = "ne";     // ne=网易云音乐, qq=QQ音乐
 String gNeState = "";        // 搜索状态
 boolean gNeSearching = false;
 List gSongs = new ArrayList();
@@ -1236,7 +1237,10 @@ boolean httpDownloadEx(String url, java.io.File dest, String cookie) {
         conn.setConnectTimeout(10000);
         conn.setReadTimeout(30000);
         conn.setRequestProperty("User-Agent", "Mozilla/5.0 (Linux; Android 10) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/110.0 Mobile Safari/537.36");
-        conn.setRequestProperty("Referer", "https://music.163.com/");
+        String dlRef = "https://music.163.com/";
+        if (url != null && url.indexOf("qqmusic") >= 0) dlRef = "https://y.qq.com/";
+        else if (url != null && url.indexOf("kugou") >= 0) dlRef = "https://www.kugou.com/";
+        conn.setRequestProperty("Referer", dlRef);
         conn.setRequestProperty("Accept", "*/*");
         if (cookie != null && cookie.length() > 0) {
             conn.setRequestProperty("Cookie", cookie);
@@ -2805,11 +2809,20 @@ long musicCacheSize() {
     return total;
 }
 
+String platformName() {
+    if ("qq".equals(gPlatform)) return "QQ音乐";
+    if ("kg".equals(gPlatform)) return "酷狗音乐";
+    return "网易云音乐";
+}
+
 String musicPageDesc() {
-    String lg = neLogged() ? "已登录" : "未登录";
-    if (gNeSearching) return "网易云音乐 · 正在搜索…";
-    if (gSongs.size() > 0) return "网易云音乐 · " + gSongs.size() + " 首 · " + lg;
-    return "网易云音乐 · " + lg;
+    String lg;
+    if ("qq".equals(gPlatform)) lg = qqLogged() ? "已登录" : "未登录";
+    else if ("kg".equals(gPlatform)) lg = kgLogged() ? "已登录" : "未登录";
+    else lg = neLogged() ? "已登录" : "未登录";
+    if (gNeSearching) return platformName() + " · 正在搜索…";
+    if (gSongs.size() > 0) return platformName() + " · " + gSongs.size() + " 首 · " + lg;
+    return platformName() + " · " + lg;
 }
 
 void renderMusicBoxPage() {
@@ -2845,6 +2858,7 @@ void renderMusicBoxPage() {
     addPageTitle(act, "音乐盒");
     addPageSubtitle(act, musicPageDesc());
 
+    addPlatformRow(act);
     addNeLoginRow(act);
     addNeSearchRow(act);
     addNeCacheRow(act);
@@ -2966,9 +2980,13 @@ void addNeLoginRow(Context act) {
     row.setBackground(makeCardBg(act, 14));
 
     TextView t = new TextView(act);
-    t.setText(neLogged() ? "网易云已登录 · 点此管理会员账号" : "会员登录管理 · 网易云 / QQ音乐");
+    boolean lg;
+    if ("qq".equals(gPlatform)) lg = qqLogged();
+    else if ("kg".equals(gPlatform)) lg = kgLogged();
+    else lg = neLogged();
+    t.setText(lg ? platformName() + "已登录 · 点此管理会员账号" : "会员登录管理 · 网易云 / QQ音乐 / 酷狗");
     t.setTextSize(12);
-    t.setTextColor(neLogged() ? C_SUB : C_BLUE);
+    t.setTextColor(lg ? C_SUB : C_BLUE);
     row.addView(t, new LinearLayout.LayoutParams(0, -2, 1f));
 
     row.setOnClickListener(new View.OnClickListener() {
@@ -2989,7 +3007,7 @@ void addNeSearchRow(Context act) {
     row.setPadding(dp2px(act, 12), dp2px(act, 2), dp2px(act, 2), dp2px(act, 2));
 
     final EditText input = new EditText(act);
-    input.setHint("搜索歌曲 / 歌手");
+    input.setHint("在" + platformName() + "搜索歌曲 / 歌手");
     input.setTextSize(14);
     input.setTextColor(C_TEXT);
     input.setHintTextColor(C_SUB);
@@ -3006,7 +3024,7 @@ void addNeSearchRow(Context act) {
                 toast("请输入歌名或歌手");
                 return;
             }
-            startNeSearch(kw);
+            startSearch(kw);
         }
     });
     row.addView(go, new LinearLayout.LayoutParams(dp2px(act, 58), dp2px(act, 34)));
@@ -3014,6 +3032,51 @@ void addNeSearchRow(Context act) {
     LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(-1, -2);
     lp.bottomMargin = dp2px(act, 8);
     gContent.addView(row, lp);
+}
+
+void addPlatformRow(Context act) {
+    LinearLayout row = new LinearLayout(act);
+    row.setOrientation(LinearLayout.HORIZONTAL);
+    row.setBackground(makeCardBg(act, 14));
+    row.setPadding(dp2px(act, 4), dp2px(act, 4), dp2px(act, 4), dp2px(act, 4));
+
+    LinearLayout.LayoutParams lp1 = new LinearLayout.LayoutParams(0, dp2px(act, 36), 1f);
+    lp1.rightMargin = dp2px(act, 3);
+    row.addView(platformChip(act, "网易云", "ne"), lp1);
+    LinearLayout.LayoutParams lp2 = new LinearLayout.LayoutParams(0, dp2px(act, 36), 1f);
+    lp2.rightMargin = dp2px(act, 3);
+    row.addView(platformChip(act, "QQ音乐", "qq"), lp2);
+    row.addView(platformChip(act, "酷狗音乐", "kg"), new LinearLayout.LayoutParams(0, dp2px(act, 36), 1f));
+
+    LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(-1, -2);
+    lp.bottomMargin = dp2px(act, 8);
+    gContent.addView(row, lp);
+}
+
+TextView platformChip(Context act, String label, final String p) {
+    TextView tv = new TextView(act);
+    tv.setText(label);
+    tv.setTextSize(13);
+    tv.setGravity(Gravity.CENTER);
+    boolean sel = p.equals(gPlatform);
+    tv.setTextColor(sel ? Color.WHITE : C_TEXT);
+    GradientDrawable bg = new GradientDrawable();
+    bg.setCornerRadius(dp2px(act, 10));
+    bg.setColor(sel ? C_BLUE : Color.TRANSPARENT);
+    tv.setBackground(bg);
+    tv.setOnClickListener(new View.OnClickListener() {
+        public void onClick(View v) {
+            if (p.equals(gPlatform)) return;
+            gPlatform = p;
+            stopMusic();
+            gSongs = new ArrayList();
+            gNeState = "";
+            gNeQuery = "";
+            gMIndex = -1;
+            renderMusicBoxPage();
+        }
+    });
+    return tv;
 }
 
 void addNeCacheRow(Context act) {
@@ -3177,6 +3240,7 @@ void showLoginUI(final Activity activity) {
 
     addLoginSection(activity, root, "qq", loginUin(), dialog);
     addNetEaseLoginSection(activity, root, "163", loginUin(), dialog);
+    addKugouLoginSection(activity, root, "kg", loginUin(), dialog);
 
     TextView closeBtn = createButton(activity, "关闭", C_BLUE, Color.WHITE);
     closeBtn.setOnClickListener(new View.OnClickListener() { public void onClick(View v) { dialog.dismiss(); } });
@@ -3362,10 +3426,94 @@ void addNetEaseLoginSection(final Activity activity, final LinearLayout parent, 
     }
 }
 
+void addKugouLoginSection(final Activity activity, final LinearLayout parent, final String platform, final String uin, final Dialog dialog) {
+    boolean hasCookie = hasLogin(platform, uin);
+    final String loginUrl = "https://www.kugou.com/";
+
+    final LinearLayout section = new LinearLayout(activity);
+    section.setOrientation(LinearLayout.VERTICAL);
+    section.setPadding(dp2px(activity, 14), dp2px(activity, 12), dp2px(activity, 14), dp2px(activity, 12));
+    LinearLayout.LayoutParams sectionParams = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+    sectionParams.setMargins(0, 0, 0, dp2px(activity, 10));
+    section.setLayoutParams(sectionParams);
+    section.setBackground(makeCardBg(activity, 18));
+
+    LinearLayout headerRow = new LinearLayout(activity);
+    headerRow.setOrientation(LinearLayout.HORIZONTAL);
+    headerRow.setGravity(Gravity.CENTER_VERTICAL);
+
+    TextView iconLabel = new TextView(activity);
+    iconLabel.setText("♪");
+    iconLabel.setTextSize(18);
+    iconLabel.setTextColor(Color.parseColor("#2CA2F0"));
+    headerRow.addView(iconLabel);
+
+    final LinearLayout nameWrap = new LinearLayout(activity);
+    nameWrap.setOrientation(LinearLayout.VERTICAL);
+    nameWrap.setPadding(dp2px(activity, 8), 0, 0, 0);
+
+    TextView nameView = new TextView(activity);
+    nameView.setText("酷狗音乐");
+    nameView.setTextSize(15);
+    nameView.setTextColor(C_TEXT);
+    nameView.setTypeface(null, Typeface.BOLD);
+    nameWrap.addView(nameView);
+
+    final TextView descView = new TextView(activity);
+    descView.setText(hasCookie ? "检测中..." : "未登录，部分歌曲可能无法播放");
+    descView.setTextSize(11);
+    descView.setTextColor(C_SUB);
+    nameWrap.addView(descView);
+    headerRow.addView(nameWrap, new LinearLayout.LayoutParams(0, -2, 1f));
+
+    final TextView statusBadge = new TextView(activity);
+    statusBadge.setText(hasCookie ? "检测中..." : "FREE");
+    statusBadge.setTextSize(11);
+    statusBadge.setTextColor(Color.WHITE);
+    statusBadge.setPadding(dp2px(activity, 8), dp2px(activity, 3), dp2px(activity, 8), dp2px(activity, 3));
+    final GradientDrawable badgeBg = new GradientDrawable();
+    badgeBg.setCornerRadius(dp2px(activity, 20));
+    badgeBg.setColor(hasCookie ? Color.parseColor("#34C759") : Color.parseColor("#FF9F0A"));
+    statusBadge.setBackground(badgeBg);
+    headerRow.addView(statusBadge);
+    section.addView(headerRow);
+
+    final LinearLayout btnContainer = new LinearLayout(activity);
+    btnContainer.setOrientation(LinearLayout.VERTICAL);
+    section.addView(btnContainer);
+    parent.addView(section);
+
+    if (hasCookie) {
+        // 已保存过 Cookie：只展示状态，不做自动校验/清除，避免登录状态被反复踢掉
+        descView.setText("已保存登录 Cookie");
+        statusBadge.setText("已登录");
+        badgeBg.setColor(Color.parseColor("#34C759"));
+        statusBadge.setBackground(badgeBg);
+        TextView logoutBtn = createButton(activity, "退出登录", Color.parseColor("#FF3B30"), Color.WHITE);
+        logoutBtn.setOnClickListener(new View.OnClickListener() {
+            public void onClick(View v) { clearLogin(platform, uin); toast("已退出酷狗音乐登录"); dialog.dismiss(); }
+        });
+        btnContainer.addView(logoutBtn);
+        TextView againBtn = createButton(activity, "重新登录酷狗音乐", C_BLUE, Color.WHITE);
+        againBtn.setOnClickListener(new View.OnClickListener() {
+            public void onClick(View v) { dialog.dismiss(); startWebLogin(activity, platform, loginUrl); }
+        });
+        btnContainer.addView(againBtn);
+    } else {
+        TextView loginBtn = createButton(activity, "一键登录酷狗音乐", C_BLUE, Color.WHITE);
+        loginBtn.setOnClickListener(new View.OnClickListener() {
+            public void onClick(View v) { dialog.dismiss(); startWebLogin(activity, platform, loginUrl); }
+        });
+        btnContainer.addView(loginBtn);
+    }
+}
+
 void startWebLogin(final Activity activity, String platform, String loginUrl) {
     webLoginPlatform = platform;
     if ("163".equals(platform)) {
         webLoginPlatformName = "网易云音乐";
+    } else if ("kg".equals(platform)) {
+        webLoginPlatformName = "酷狗音乐";
     } else {
         webLoginPlatformName = "QQ音乐";
     }
@@ -3457,11 +3605,12 @@ void startWebLogin(final Activity activity, String platform, String loginUrl) {
         public void onClick(View v) {
             if (webLoginWebView == null) return;
             String url = webLoginWebView.getUrl();
-            if (url == null || url.length() == 0) url = "https://music.163.com";
+            if (url == null || url.length() == 0) url = "https://www.kugou.com";
             String cookie = CookieManager.getInstance().getCookie(url);
             boolean ok = cookie != null && cookie.length() > 0;
             if (ok && "163".equals(webLoginPlatform) && !cookie.contains("MUSIC_U=")) ok = false;
-            if (ok && !"163".equals(webLoginPlatform) && !cookie.contains("qqmusic_key=") && !cookie.contains("qm_keyst=")) ok = false;
+            if (ok && "qq".equals(webLoginPlatform) && !cookie.contains("qqmusic_key=") && !cookie.contains("qm_keyst=")) ok = false;
+            if (ok && "kg".equals(webLoginPlatform) && !isKgCookie(cookie)) ok = false;
             if (ok) {
                 saveLogin(webLoginPlatform, loginUin(), cookie);
                 statusText.setText("  已手动保存Cookie");
@@ -3489,7 +3638,7 @@ void startWebLogin(final Activity activity, String platform, String loginUrl) {
             if (url.contains("login") || url.contains("authorize") || url.contains("oauth") || url.contains("passport") || url.contains("acct")) {
                 return;
             }
-            if (!url.contains("y.qq.com") && !url.contains("music.163.com")) {
+            if (!url.contains("y.qq.com") && !url.contains("music.163.com") && !url.contains("kugou.com")) {
                 return;
             }
             String cookie = CookieManager.getInstance().getCookie(url);
@@ -3497,6 +3646,8 @@ void startWebLogin(final Activity activity, String platform, String loginUrl) {
                 boolean ok = false;
                 if ("163".equals(webLoginPlatform)) {
                     if (cookie.contains("MUSIC_U=")) ok = true;
+                } else if ("kg".equals(webLoginPlatform)) {
+                    if (isKgCookie(cookie)) ok = true;
                 } else {
                     if (cookie.contains("qqmusic_key=") || cookie.contains("qm_keyst=")) ok = true;
                 }
@@ -3660,6 +3811,274 @@ String fmtMs(Object v) {
     long m = sec / 60;
     long s2 = sec % 60;
     return m + ":" + (s2 < 10 ? "0" : "") + s2;
+}
+
+String qqCookie() {
+    try { return getLogin("qq", loginUin()); } catch (Throwable t) { return ""; }
+}
+
+boolean qqLogged() {
+    String c = qqCookie();
+    return c != null && c.length() > 0;
+}
+
+String musicUinNum() {
+    String u = "";
+    try { u = getMusicUin(); } catch (Throwable t) { u = ""; }
+    if (u == null) u = "";
+    u = u.trim();
+    while (u.length() > 0 && !Character.isDigit(u.charAt(0))) u = u.substring(1);
+    return u.length() == 0 ? "0" : u;
+}
+
+String fmtSec(Object v) {
+    long sec = 0;
+    try { sec = Long.parseLong(String.valueOf(v)); } catch (Throwable t) {}
+    long m = sec / 60;
+    long s2 = sec % 60;
+    return m + ":" + (s2 < 10 ? "0" : "") + s2;
+}
+
+void startSearch(String kw) {
+    if ("qq".equals(gPlatform)) startQqSearch(kw);
+    else if ("kg".equals(gPlatform)) startKugouSearch(kw);
+    else startNeSearch(kw);
+}
+
+void startQqSearch(final String kw) {
+    if (gNeSearching) return;
+    gNeSearching = true;
+    gNeQuery = kw;
+    gNeState = "";
+    gSongs = new ArrayList();
+    renderMusicBoxPage();
+
+    new Thread(new Runnable() {
+        public void run() {
+            List list = new ArrayList();
+            String err = "";
+            try {
+                String u = "https://c.y.qq.com/soso/fcgi-bin/search_for_qq_cp?w=" + enc(kw)
+                        + "&format=json&n=30&p=1&remoteplace=txt.yqq.center&t=0&aggr=1&cr=1&catZhida=1&lossless=0&flag_qc=0";
+                String raw = httpGetWithReferer(u, qqCookie(), "https://y.qq.com/");
+                int a = raw == null ? -1 : raw.indexOf('{');
+                int b = raw == null ? -1 : raw.lastIndexOf('}');
+                if (a >= 0 && b > a) raw = raw.substring(a, b + 1);
+                if (raw != null && raw.length() > 0) {
+                    org.json.JSONObject root = new org.json.JSONObject(raw);
+                    org.json.JSONObject d = root.optJSONObject("data");
+                    org.json.JSONObject sg = d == null ? null : d.optJSONObject("song");
+                    org.json.JSONArray arr = sg == null ? null : sg.optJSONArray("list");
+                    if (arr != null) {
+                        for (int i = 0; i < arr.length(); i++) {
+                            org.json.JSONObject o = arr.getJSONObject(i);
+                            String mid = o.optString("songmid", "");
+                            if (mid.length() == 0) continue;
+                            String nm = o.optString("songname", "");
+                            String ar = "";
+                            org.json.JSONArray as = o.optJSONArray("singer");
+                            if (as != null) {
+                                for (int k = 0; k < as.length(); k++) {
+                                    if (k > 0) ar = ar + "/";
+                                    ar = ar + as.getJSONObject(k).optString("name", "");
+                                }
+                            }
+                            String dur = fmtSec(o.opt("interval"));
+                            list.add(new String[]{ nm, ar, mid, "", dur });
+                        }
+                    }
+                }
+                if (list.size() == 0) err = "没有找到相关歌曲";
+            } catch (Throwable t) {
+                err = "搜索失败，请检查网络";
+            }
+            final List fl = list;
+            final String fe = err;
+            postUi(new Runnable() {
+                public void run() {
+                    gNeSearching = false;
+                    gSongs = fl;
+                    gNeState = fe;
+                    gMIndex = -1;
+                    if (gMPlayingId != null && gMPlayingId.length() > 0) {
+                        for (int i = 0; i < gSongs.size(); i++) {
+                            if (gMPlayingId.equals(((String[]) gSongs.get(i))[2])) { gMIndex = i; break; }
+                        }
+                    }
+                    renderMusicBoxPage();
+                }
+            });
+        }
+    }).start();
+}
+
+String qqPlayUrl(String mid) {
+    if (mid == null || mid.length() == 0) return "";
+    try {
+        String uin = musicUinNum();
+        String fn = "M500" + mid + mid + ".mp3";
+        String body = "{\"req_0\":{\"module\":\"vkey.GetVkeyServer\",\"method\":\"CgiGetVkey\",\"param\":{\"guid\":\"3982823384\",\"songmid\":[\"" + mid + "\"],\"songtype\":[0],\"uin\":\"" + uin + "\",\"loginflag\":1,\"platform\":\"20\",\"filename\":[\"" + fn + "\"]}},\"comm\":{\"uin\":" + uin + ",\"format\":\"json\",\"ct\":24,\"cv\":0}}";
+        String u = "https://u.y.qq.com/cgi-bin/musicu.fcg?format=json&data=" + enc(body);
+        String raw = httpGetWithReferer(u, qqCookie(), "https://y.qq.com/");
+        if (raw == null || raw.length() == 0) return "";
+        org.json.JSONObject root = new org.json.JSONObject(raw);
+        org.json.JSONObject r0 = root.optJSONObject("req_0");
+        org.json.JSONObject rd = r0 == null ? null : r0.optJSONObject("data");
+        if (rd == null) return "";
+        String sip = "";
+        org.json.JSONArray sips = rd.optJSONArray("sip");
+        if (sips != null && sips.length() > 0) sip = sips.getString(0);
+        org.json.JSONArray arr = rd.optJSONArray("midurlinfo");
+        if (arr == null || arr.length() == 0) return "";
+        String purl = arr.getJSONObject(0).optString("purl", "");
+        if (purl.length() == 0) return "";
+        if (purl.startsWith("http")) return purl;
+        return sip + purl;
+    } catch (Throwable t) {
+        log("error.txt", "qqPlayUrl失败=" + t.toString());
+    }
+    return "";
+}
+
+String kgCookie() {
+    try { return getLogin("kg", loginUin()); } catch (Throwable t) { return ""; }
+}
+
+boolean kgLogged() {
+    String c = kgCookie();
+    return c != null && c.length() > 0;
+}
+
+boolean isKgCookie(String cookie) {
+    if (cookie == null || cookie.length() == 0) return false;
+    return cookie.indexOf("userid=") >= 0 || cookie.indexOf("KuGoo=") >= 0;
+}
+
+String kgCookieValue(String cookie, String key) {
+    if (cookie == null || cookie.length() == 0) return "";
+    String[] parts = cookie.split(";");
+    for (int i = 0; i < parts.length; i++) {
+        String p = parts[i].trim();
+        if (p.startsWith(key + "=")) return p.substring(key.length() + 1).trim();
+    }
+    return "";
+}
+
+String md5Hex(String s) {
+    try {
+        java.security.MessageDigest md = java.security.MessageDigest.getInstance("MD5");
+        byte[] b = md.digest(s.getBytes("UTF-8"));
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < b.length; i++) {
+            String h = Integer.toHexString(b[i] & 0xff);
+            if (h.length() == 1) sb.append('0');
+            sb.append(h);
+        }
+        return sb.toString();
+    } catch (Throwable t) {
+        return "";
+    }
+}
+
+String stripTags(String s) {
+    if (s == null) return "";
+    return s.replaceAll("<[^>]+>", "");
+}
+
+String kgPlayUrl(String hash) {
+    if (hash == null || hash.length() == 0) return "";
+    String cookie = kgCookie();
+    String mid = kgCookieValue(cookie, "kg_mid");
+    String dfid = kgCookieValue(cookie, "kg_dfid");
+    if (mid.length() == 0) mid = md5Hex("voicebox" + hash);
+    if (dfid.length() == 0) dfid = "-";
+    String ck = cookie == null ? "" : cookie;
+    if (ck.indexOf("kg_mid=") < 0) ck = (ck.length() > 0 ? ck + "; " : "") + "kg_mid=" + mid;
+    if (ck.indexOf("kg_dfid=") < 0) ck = ck + "; kg_dfid=" + dfid;
+    try {
+        String u = "https://wwwapi.kugou.com/yy/index.php?r=play/getdata&hash=" + hash
+                + "&album_id=&dfid=" + enc(dfid) + "&mid=" + mid + "&platid=4";
+        String raw = httpGetWithReferer(u, ck, "https://www.kugou.com/");
+        if (raw != null && raw.length() > 0) {
+            org.json.JSONObject root = new org.json.JSONObject(raw);
+            org.json.JSONObject d = root.optJSONObject("data");
+            if (d != null) {
+                String p = d.optString("play_url", "");
+                if (p.length() == 0) p = d.optString("url", "");
+                if (p.length() > 0 && p.startsWith("http")) return p;
+            }
+        }
+    } catch (Throwable t) {
+        log("error.txt", "kgPlayUrl主接口失败=" + t.toString());
+    }
+    try {
+        String u = "https://m.kugou.com/app/i/getSongInfo.php?cmd=playInfo&hash=" + hash;
+        String raw = httpGetWithReferer(u, ck, "https://m.kugou.com/");
+        if (raw != null && raw.length() > 0) {
+            org.json.JSONObject root = new org.json.JSONObject(raw);
+            String p = root.optString("url", "");
+            if (p.length() > 0 && p.startsWith("http")) return p;
+        }
+    } catch (Throwable t) {
+        log("error.txt", "kgPlayUrl备用接口失败=" + t.toString());
+    }
+    return "";
+}
+
+void startKugouSearch(final String kw) {
+    if (gNeSearching) return;
+    gNeSearching = true;
+    gNeQuery = kw;
+    gNeState = "";
+    gSongs = new ArrayList();
+    renderMusicBoxPage();
+
+    new Thread(new Runnable() {
+        public void run() {
+            List list = new ArrayList();
+            String err = "";
+            try {
+                String u = "https://songsearch.kugou.com/song_search_v2?keyword=" + enc(kw)
+                        + "&page=1&pagesize=30&platform=WebFilter&userid=0&clientver=2000&filter=2&iscorrection=1&privilege_filter=0";
+                String raw = httpGetWithReferer(u, kgCookie(), "https://www.kugou.com/");
+                if (raw != null && raw.length() > 0) {
+                    org.json.JSONObject root = new org.json.JSONObject(raw);
+                    org.json.JSONObject d = root.optJSONObject("data");
+                    org.json.JSONArray arr = d == null ? null : d.optJSONArray("lists");
+                    if (arr != null) {
+                        for (int i = 0; i < arr.length(); i++) {
+                            org.json.JSONObject o = arr.getJSONObject(i);
+                            String hash = o.optString("FileHash", "");
+                            if (hash.length() == 0) continue;
+                            String nm = stripTags(o.optString("SongName", ""));
+                            String ar = stripTags(o.optString("SingerName", ""));
+                            String dur = fmtSec(o.opt("Duration"));
+                            list.add(new String[]{ nm, ar, hash, "", dur });
+                        }
+                    }
+                }
+                if (list.size() == 0) err = "没有找到相关歌曲";
+            } catch (Throwable t) {
+                err = "搜索失败，请检查网络";
+            }
+            final List fl = list;
+            final String fe = err;
+            postUi(new Runnable() {
+                public void run() {
+                    gNeSearching = false;
+                    gSongs = fl;
+                    gNeState = fe;
+                    gMIndex = -1;
+                    if (gMPlayingId != null && gMPlayingId.length() > 0) {
+                        for (int i = 0; i < gSongs.size(); i++) {
+                            if (gMPlayingId.equals(((String[]) gSongs.get(i))[2])) { gMIndex = i; break; }
+                        }
+                    }
+                    renderMusicBoxPage();
+                }
+            });
+        }
+    }).start();
 }
 
 void startNeSearch(final String kw) {
@@ -3979,7 +4398,7 @@ void hidePlayerBar() {
 }
 
 String neCacheName(String[] s) {
-    return "ne_" + Math.abs((s[0] + s[1]).hashCode()) + ".mp3";
+    return gPlatform + "_" + Math.abs((s[0] + s[1]).hashCode()) + ".mp3";
 }
 
 java.io.File neCacheFile(String[] s) {
@@ -4007,8 +4426,15 @@ void playSongAt(final int index) {
     new Thread(new Runnable() {
         public void run() {
             String url = s[3];
-            if (url == null || url.length() == 0) url = nePlayUrl(s[2]);
-            boolean ok = url.length() > 0 && httpDownloadEx(url, cache, neCookie());
+            if (url == null || url.length() == 0) {
+                if ("qq".equals(gPlatform)) url = qqPlayUrl(s[2]);
+                else if ("kg".equals(gPlatform)) url = kgPlayUrl(s[2]);
+                else url = nePlayUrl(s[2]);
+            }
+            String dlCookie = neCookie();
+            if ("qq".equals(gPlatform)) dlCookie = qqCookie();
+            else if ("kg".equals(gPlatform)) dlCookie = kgCookie();
+            boolean ok = url.length() > 0 && httpDownloadEx(url, cache, dlCookie);
             final boolean fok = ok;
             postUi(new Runnable() {
                 public void run() {
@@ -4016,7 +4442,13 @@ void playSongAt(final int index) {
                     if (!fok || !cache.exists() || cache.length() < 50000) {
                         try { if (cache.exists()) cache.delete(); } catch (Throwable t) {}
                         if (gMNow != null) gMNow.setText("未在播放");
-                        toast("该歌曲暂无版权或需要会员，换个版本试试");
+                        if ("qq".equals(gPlatform)) {
+                            toast(qqLogged() ? "QQ音乐该歌曲无版权或需要会员" : "QQ音乐播放需先到会员登录管理登录账号");
+                        } else if ("kg".equals(gPlatform)) {
+                            toast(kgLogged() ? "酷狗该歌曲无版权或需要VIP" : "酷狗播放需先到会员登录管理登录账号");
+                        } else {
+                            toast("该歌曲暂无版权或需要会员，换个版本试试");
+                        }
                         return;
                     }
                     playLocalFile(cache);

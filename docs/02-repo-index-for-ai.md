@@ -26,7 +26,7 @@
     "id": "voicebox",
     "name": "语音盒",
     "author": "nl",
-    "version": "1.9.4",
+    "version": "1.9.6",
     "zip": "https://mcer.dpdns.org/plugin/voicebox.zip",
     "latest": "https://mcer.dpdns.org/plugin/latest.json"
   },
@@ -50,8 +50,8 @@
 | `version.json` | 数字版本：`packs/files/songs/updated`，客户端缓存比对用 |
 | `audio/<包名>/*.mp3` | 云端语音包文件，约 9911 个 |
 | `music/*.mp3` + `music/music.json` | 早期 CC 曲库，音乐盒已改用网易云，保留未用 |
-| `plugin/voicebox.zip` | 当前插件安装包（1.9.4，需 `git add -f`） |
-| `plugin/latest.json` | `{"version":"1.9.4","zip":"..."}` 自更新入口 |
+| `plugin/voicebox.zip` | 当前插件安装包（1.9.6，需 `git add -f`） |
+| `plugin/latest.json` | `{"version":"1.9.6","zip":"..."}` 自更新入口 |
 | `source/voicebox/main.java` | 插件主脚本（BeanShell，全部功能） |
 | `source/voicebox/info.prop` | 插件元信息：id/名称/versionCode/author/type |
 | `source/apk-patch/LocalPluginInjector.smali` | 商店注入 voicebox 条目 + 动态版本读取 |
@@ -59,17 +59,19 @@
 | `docs/00-project-overview.md` | 项目总览：功能/接口/构建/版本轨迹 |
 | `docs/01-conversation-devlog.md` | 全部需求与修复的时间线 |
 | `docs/02-repo-index-for-ai.md` | 本文件 |
+| `docs/03-musicbox.md` | 音乐盒专题：三平台、登录、搜索、播放、缓存、代码索引 |
 
 ## 4. 插件代码入口（source/voicebox/main.java）
 
 - 菜单注册：`addItem("语音盒", "showVoiceMenu")`、`addItem("会员登录管理", "showLoginDialog")`
 - 首页：`renderHomePage()`
 - 云端语音包：`renderRootPage()` / `startCloudRefresh()` / `cloud_packs.json` 缓存
-- 音乐盒：`renderMusicBoxPage()` / `startNeSearch()` / `playSongAt()` / `playLocalFile()`
+- 音乐盒：`renderMusicBoxPage()` / 平台切换 / `startNeSearch()` `startQqSearch()` `startKugouSearch()` / `playSongAt()` / `playLocalFile()`
+- 音乐盒详解见 [03-musicbox.md](03-musicbox.md)
 - 清缓存：`musicCacheSize()` / `clearMusicCache()` / `addNeCacheRow()`
-- 登录：`showLoginUI()` / `addLoginSection()`（QQ音乐）/ `addNetEaseLoginSection()` / `startWebLogin()`
+- 登录：`showLoginUI()` / `showNeLogin()` / `startWebLogin()`（网易云 / QQ音乐 / 酷狗）
 - 登录存储：`saveLogin/getLogin/clearLogin/hasLogin`（宿主 `putString/getString`，配置 `music_login`）
-- 播放地址：`nePlayUrl()`（账号接口 → outer url 兜底）
+- 播放地址：`nePlayUrl()` / `qqPlayUrl()` / `kgPlayUrl()`（账号接口 → 兜底接口）
 - 自更新：`forceCheckUpdate()` / `installViaHost()` / `installPluginZip()` / `localPluginVersion()`
 - 网易云请求：`httpGetNe()`，下载：`httpDownloadEx(url, dest, cookie)`
 
@@ -91,7 +93,7 @@
 
 ## 7. 已知问题
 
-- 音乐盒搜索只接网易云；QQ 音乐只用于登录
+- 音乐盒已接三平台搜索：网易云 / QQ音乐 / 酷狗；QQ、酷狗播放依赖登录 Cookie
 - 部分 VIP/版权歌曲登录后仍拿不到播放地址，会提示「暂无版权或需要会员」
 - 登录 Cookie 按 QQ 号分开存，换号需重新登录
 - 旧 APK 的商店版本不会动态同步（需含 `readVersion()` 的新 APK）

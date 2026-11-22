@@ -3,13 +3,14 @@
 QFun 插件「语音盒」的站点、插件包、源码与文档仓库。
 
 - 站点：<https://mcer.dpdns.org>
-- 插件最新版本：**1.9.4**（`plugin/latest.json`）
-- 插件下载：<https://mcer.dpdns.org/plugin/voicebox.zip>
+- 插件最新版本：**1.9.6**（`plugin/latest.json`）
+- 插件 / 音乐盒下载：<https://mcer.dpdns.org/plugin/voicebox.zip>
 
 ## 文档 / 交接
 
 - [项目总览](docs/00-project-overview.md)：功能、接口、构建、版本轨迹
 - [对话开发记录](docs/01-conversation-devlog.md)：每条需求与修复的时间线
+- [音乐盒专题](docs/03-musicbox.md)：三平台搜索 / 登录 / 播放 / 缓存完整说明
 - [仓库清单（给 AI 的单文件入口）](docs/02-repo-index-for-ai.md)
 
 ## 源码
